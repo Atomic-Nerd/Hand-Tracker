@@ -1,0 +1,4 @@
+pyttsx3
+time 
+opencv-python
+mediapipe==0.10.14
