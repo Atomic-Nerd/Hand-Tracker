@@ -27,7 +27,7 @@ if __name__ == "__main__":
         min_tracking_confidence=0.7
         ) as hands:
 
-        binaryStates = [0,0,0,0,0,0,0,0]
+        #binaryStates = [0,0,0,0,0,0,0,0]
         while True:
             success, img = cap.read() 
             attempt = 0
@@ -45,7 +45,11 @@ if __name__ == "__main__":
 
             results = hands.process(rgb)
 
-            past_binaryStates = binaryStates.copy()  # Create a copy of the current state to compare later
+            #past_binaryStates = binaryStates.copy()  # Create a copy of the current state to compare later
+            index_coords = {
+                "Left" : None,
+                "Right" : None
+            }
             if results.multi_hand_landmarks:
                 for hand_index, hand_landmarks in enumerate(results.multi_hand_landmarks):
                     hand_label = results.multi_handedness[hand_index].classification[0].label
@@ -63,6 +67,9 @@ if __name__ == "__main__":
                         "Pinky": hand_landmarks.landmark[20]
                     }
 
+                    index_coords[hand_label] = finger_tips.copy()
+
+                    '''
                     if hand_label == "Right":
                         binaryStates[4] = 1 if finger_tips["Index"].y < hand_landmarks.landmark[6].y else 0
                         binaryStates[5] = 1 if finger_tips["Middle"].y < hand_landmarks.landmark[10].y else 0
@@ -73,12 +80,14 @@ if __name__ == "__main__":
                         binaryStates[2] = 1 if finger_tips["Middle"].y < hand_landmarks.landmark[10].y else 0
                         binaryStates[1] = 1 if finger_tips["Ring"].y < hand_landmarks.landmark[14].y else 0
                         binaryStates[0] = 1 if finger_tips["Pinky"].y < hand_landmarks.landmark[18].y else 0
+                    '''
 
                     for finger, tip in finger_tips.items():
                         x, y = int(tip.x * w), int(tip.y * h)
                         cv2.circle(img, (x, y), 5, (0, 255, 0), cv2.FILLED)
                         cv2.putText(img, f"{hand_label[0]}: {finger}", (x + 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
-            
+
+            '''
             if past_binaryStates != binaryStates:
                 value = binary_to_decimal(binaryStates)
                 print(
@@ -90,7 +99,21 @@ if __name__ == "__main__":
                     args=(value,),
                     daemon=True
                 ).start()
+            '''
 
+            if index_coords["Left"] and index_coords["Right"]:
+                #Line between Indexs
+                cv2.line(img, (int(index_coords["Left"]["Index"].x * w), int(index_coords["Left"]["Index"].y * h)), (int(index_coords["Right"]["Index"].x * w), int(index_coords["Right"]["Index"].y * h)), (255, 0, 0), 2)
+
+                #Line between Thumbs
+                cv2.line(img, (int(index_coords["Left"]["Thumb"].x * w), int(index_coords["Left"]["Thumb"].y * h)), (int(index_coords["Right"]["Thumb"].x * w), int(index_coords["Right"]["Thumb"].y * h)), (0, 255, 0), 2)
+
+                #Line between Index and Thumb Left
+                cv2.line(img, (int(index_coords["Left"]["Index"].x * w), int(index_coords["Left"]["Index"].y * h)), (int(index_coords["Left"]["Thumb"].x * w), int(index_coords["Left"]["Thumb"].y * h)), (0, 255, 0), 2)
+
+
+                #Line between Index and Thumb Right
+                cv2.line(img, (int(index_coords["Right"]["Index"].x * w), int(index_coords["Right"]["Index"].y * h)), (int(index_coords["Right"]["Thumb"].x * w), int(index_coords["Right"]["Thumb"].y * h)), (0, 255, 0), 2)
 
             cv2.imshow("Image", img)
             if cv2.waitKey(1) & 0xFF == ord('q'):
