@@ -3,6 +3,7 @@ import cv2
 import time
 import pyttsx3
 import threading
+import numpy as np
 
 mp_hands = mp.solutions.hands
 mp_draw = mp.solutions.drawing_utils
@@ -113,7 +114,9 @@ if __name__ == "__main__":
                 ).start()
             '''
 
+
             if index_coords["Left"] and index_coords["Right"]:
+                crossed_over = lines_intersect(index_coords["Left"]["Index"], index_coords["Right"]["Index"], index_coords["Left"]["Thumb"], index_coords["Right"]["Thumb"])
                 #Line between Indexs
                 cv2.line(img, index_coords["Left"]["Index"], index_coords["Right"]["Index"], (255, 0, 0), 2)
 
@@ -127,10 +130,30 @@ if __name__ == "__main__":
                 #Line between Index and Thumb Right
                 cv2.line(img, index_coords["Right"]["Index"], index_coords["Right"]["Thumb"], (0, 255, 0), 2)
 
-                if lines_intersect(index_coords["Left"]["Index"], index_coords["Right"]["Index"], index_coords["Left"]["Thumb"], index_coords["Right"]["Thumb"]):
-                    cv2.putText(img, "Hands Intersecting!", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                    print("Hands Intersecting!")
+                box_points = np.array([
+                    index_coords["Left"]["Index"],
+                    index_coords["Right"]["Index"],
+                    index_coords["Right"]["Thumb"],
+                    index_coords["Left"]["Thumb"]
+                ], dtype=np.int32)
 
+                # Create mask for the hand-made box
+                mask = np.zeros(img.shape[:2], dtype=np.uint8)
+
+                cv2.fillPoly(
+                    mask,
+                    [box_points],
+                    255
+                )
+
+                # Blur the whole image
+                blurred = cv2.GaussianBlur(img, (51, 51), 0)
+
+                if crossed_over:
+                    img = np.where(mask[:, :, None] == 255, blurred, img)
+                else:
+                    img = np.where(mask[:, :, None] == 255, img, blurred)
+            
             cv2.imshow("Image", img)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
