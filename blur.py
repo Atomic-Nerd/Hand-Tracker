@@ -126,7 +126,6 @@ if __name__ == "__main__":
                 #Line between Index and Thumb Left
                 cv2.line(img, index_coords["Left"]["Index"], index_coords["Left"]["Thumb"], (0, 255, 0), 2)
 
-
                 #Line between Index and Thumb Right
                 cv2.line(img, index_coords["Right"]["Index"], index_coords["Right"]["Thumb"], (0, 255, 0), 2)
 
