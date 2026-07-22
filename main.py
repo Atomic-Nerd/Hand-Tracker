@@ -1,6 +1,8 @@
 import mediapipe as mp
 import cv2
 import time
+import pyttsx3
+import threading
 
 mp_hands = mp.solutions.hands
 mp_draw = mp.solutions.drawing_utils
@@ -8,6 +10,11 @@ mp_draw = mp.solutions.drawing_utils
 cap = cv2.VideoCapture(0)
 cap.set(3, 1280)
 cap.set(4, 720)
+
+def say(value):
+    engine = pyttsx3.init()
+    engine.say(str(value))
+    engine.runAndWait()
 
 def binary_to_decimal(binary_list):
     return sum(val * (2 ** idx) for idx, val in enumerate(reversed(binary_list)))
@@ -73,7 +80,17 @@ if __name__ == "__main__":
                         cv2.putText(img, f"{hand_label[0]}: {finger}", (x + 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
             
             if past_binaryStates != binaryStates:
-                print(f"Finger States Changed: {binaryStates} -> Decimal Value: {binary_to_decimal(binaryStates)}")
+                value = binary_to_decimal(binaryStates)
+                print(
+                    f"Finger States Changed: {binaryStates} -> Decimal Value: {value}"
+                )
+
+                threading.Thread(
+                    target=say,
+                    args=(value,),
+                    daemon=True
+                ).start()
+
 
             cv2.imshow("Image", img)
             if cv2.waitKey(1) & 0xFF == ord('q'):
