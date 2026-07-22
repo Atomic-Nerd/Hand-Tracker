@@ -19,6 +19,13 @@ def say(value):
 def binary_to_decimal(binary_list):
     return sum(val * (2 ** idx) for idx, val in enumerate(reversed(binary_list)))
 
+def ccw(A, B, C):
+    return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
+
+
+def lines_intersect(A, B, C, D):
+    return ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D)
+
 if __name__ == "__main__":
     print ("Beginning video capture. Press 'q' to quit.")
     with mp_hands.Hands(
@@ -67,7 +74,6 @@ if __name__ == "__main__":
                         "Pinky": hand_landmarks.landmark[20]
                     }
 
-                    index_coords[hand_label] = finger_tips.copy()
 
                     '''
                     if hand_label == "Right":
@@ -81,11 +87,17 @@ if __name__ == "__main__":
                         binaryStates[1] = 1 if finger_tips["Ring"].y < hand_landmarks.landmark[14].y else 0
                         binaryStates[0] = 1 if finger_tips["Pinky"].y < hand_landmarks.landmark[18].y else 0
                     '''
-
+                    finger_coords = {}
                     for finger, tip in finger_tips.items():
                         x, y = int(tip.x * w), int(tip.y * h)
+
+                        finger_coords[finger] = (x, y)
+
                         cv2.circle(img, (x, y), 5, (0, 255, 0), cv2.FILLED)
                         cv2.putText(img, f"{hand_label[0]}: {finger}", (x + 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+
+                    index_coords[hand_label] = finger_coords
+                    
 
             '''
             if past_binaryStates != binaryStates:
@@ -103,17 +115,21 @@ if __name__ == "__main__":
 
             if index_coords["Left"] and index_coords["Right"]:
                 #Line between Indexs
-                cv2.line(img, (int(index_coords["Left"]["Index"].x * w), int(index_coords["Left"]["Index"].y * h)), (int(index_coords["Right"]["Index"].x * w), int(index_coords["Right"]["Index"].y * h)), (255, 0, 0), 2)
+                cv2.line(img, index_coords["Left"]["Index"], index_coords["Right"]["Index"], (255, 0, 0), 2)
 
                 #Line between Thumbs
-                cv2.line(img, (int(index_coords["Left"]["Thumb"].x * w), int(index_coords["Left"]["Thumb"].y * h)), (int(index_coords["Right"]["Thumb"].x * w), int(index_coords["Right"]["Thumb"].y * h)), (0, 255, 0), 2)
+                cv2.line(img, index_coords["Left"]["Thumb"], index_coords["Right"]["Thumb"], (0, 255, 0), 2)
 
                 #Line between Index and Thumb Left
-                cv2.line(img, (int(index_coords["Left"]["Index"].x * w), int(index_coords["Left"]["Index"].y * h)), (int(index_coords["Left"]["Thumb"].x * w), int(index_coords["Left"]["Thumb"].y * h)), (0, 255, 0), 2)
+                cv2.line(img, index_coords["Left"]["Index"], index_coords["Left"]["Thumb"], (0, 255, 0), 2)
 
 
                 #Line between Index and Thumb Right
-                cv2.line(img, (int(index_coords["Right"]["Index"].x * w), int(index_coords["Right"]["Index"].y * h)), (int(index_coords["Right"]["Thumb"].x * w), int(index_coords["Right"]["Thumb"].y * h)), (0, 255, 0), 2)
+                cv2.line(img, index_coords["Right"]["Index"], index_coords["Right"]["Thumb"], (0, 255, 0), 2)
+
+                if lines_intersect(index_coords["Left"]["Index"], index_coords["Right"]["Index"], index_coords["Left"]["Thumb"], index_coords["Right"]["Thumb"]):
+                    cv2.putText(img, "Hands Intersecting!", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    print("Hands Intersecting!")
 
             cv2.imshow("Image", img)
             if cv2.waitKey(1) & 0xFF == ord('q'):
